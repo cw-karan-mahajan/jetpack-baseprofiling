@@ -53,71 +53,90 @@ class MovieRepository @Inject constructor(
                 emit(Resource.Success(localData))
             } else {
                 Log.e(TAG, "No data found in assets")
-                emit(Resource.Error("No data available"))
+                emit(Resource.Error("No data available - Please ensure defaultrows/default.json exists in assets folder"))
             }
         }
     }.catch { exception ->
         Log.e(TAG, "Flow exception caught", exception)
-        emit(Resource.Error("Error loading data: ${exception.message}"))
+        val localData = getDataFromAssets()
+        if (localData != null && localData.rows.isNotEmpty()) {
+            Log.d(
+                TAG,
+                "Successfully loaded data from assets after exception: ${localData.rows.size} rows"
+            )
+            emit(Resource.Success(localData))
+        } else {
+            Log.e(TAG, "No data found in assets after exception")
+            emit(Resource.Error("Error loading data: ${exception.message} - Please ensure defaultrows/default.json exists"))
+        }
     }
 
     private fun getDataFromAssets(): MovieResponse? {
         return try {
-            Log.d(TAG, "Attempting to read from assets...")
-            // Try different possible file paths
-            val possiblePaths = listOf(
-                "defaultrows/default.json",
-                "defaultrows/offline_noservice.json"
-            )
+            Log.d(TAG, "🔍 Attempting to read from assets...")
 
-            for (path in possiblePaths) {
-                try {
-                    Log.d(TAG, "Trying to read: $path")
-                    val inputStream = context.assets.open(path)
-                    val size = inputStream.available()
-                    val buffer = ByteArray(size)
-                    val bytesRead = inputStream.read(buffer)
-                    inputStream.close()
+            val path = "defaultrows/default.json"
 
-                    if (bytesRead > 0) {
-                        val json = String(buffer, Charsets.UTF_8)
-                        Log.d(TAG, "Successfully read $path, size: ${json.length}")
+            try {
+                Log.d(TAG, "📁 Trying to read: $path")
+                val inputStream = context.assets.open(path)
+                val size = inputStream.available()
+                val buffer = ByteArray(size)
+                val bytesRead = inputStream.read(buffer)
+                inputStream.close()
 
-                        if (json.isNotBlank()) {
-                            try {
-                                val movieResponse = gson.fromJson(json, MovieResponse::class.java)
+                if (bytesRead > 0) {
+                    val json = String(buffer, Charsets.UTF_8)
+                    Log.d(TAG, "Successfully read $path, size: ${json.length}")
+                    Log.d(TAG, "First 200 chars: ${json.take(200)}")
 
-                                if (movieResponse != null && movieResponse.rows.isNotEmpty()) {
-                                    Log.d(TAG, "Successfully parsed JSON from $path")
+                    if (json.isNotBlank()) {
+                        try {
+                            val movieResponse = gson.fromJson(json, MovieResponse::class.java)
 
-                                    // Validate the data
-                                    val validatedResponse = validateMovieResponse(movieResponse)
+                            if (movieResponse != null && movieResponse.rows.isNotEmpty()) {
+                                Log.d(TAG, "DATA SOURCE: ASSETS FILE - $path")
+                                Log.d(TAG, "Successfully parsed JSON from $path")
 
-                                    Log.d(TAG, "Validated response: ${validatedResponse.rows.size} rows")
-                                    validatedResponse.rows.forEachIndexed { index, row ->
-                                        Log.d(TAG, "Row $index: '${row.rowHeader}' - ${row.rowItems.size} items, layout: ${row.rowLayout}")
-                                    }
+                                // Validate the data
+                                val validatedResponse = validateMovieResponse(movieResponse)
 
-                                    return validatedResponse
+                                Log.d(
+                                    TAG,
+                                    "Validated response: ${validatedResponse.rows.size} rows"
+                                )
+                                validatedResponse.rows.forEachIndexed { index, row ->
+                                    Log.d(
+                                        TAG,
+                                        "Row $index: '${row.rowHeader}' - ${row.rowItems.size} items, layout: ${row.rowLayout}"
+                                    )
                                 }
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error parsing JSON from $path", e)
+
+                                return validatedResponse
+                            } else {
+                                Log.e(TAG, "Parsed JSON but no valid rows found")
+                                return null
                             }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error parsing JSON from $path", e)
+                            return null
                         }
+                    } else {
+                        Log.e(TAG, "JSON file is blank")
+                        return null
                     }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to read $path: ${e.message}")
+                } else {
+                    Log.e(TAG, "No bytes read from file")
+                    return null
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to read $path: ${e.message}")
+                return null
             }
-
-            Log.e(TAG, "No valid JSON file found in assets")
-
-            // Create sample data as fallback
-            return createSampleData()
 
         } catch (e: Exception) {
             Log.e(TAG, "Error reading from assets", e)
-            return createSampleData()
+            return null
         }
     }
 
@@ -127,7 +146,10 @@ class MovieRepository @Inject constructor(
                 // Filter out tiles with invalid data
                 val validTiles = row.rowItems.mapNotNull { tile ->
                     if (tile.tid.isBlank() || tile.title.isBlank()) {
-                        Log.w(TAG, "Skipping invalid tile: tid='${tile.tid}', title='${tile.title}'")
+                        Log.w(
+                            TAG,
+                            "Skipping invalid tile: tid='${tile.tid}', title='${tile.title}'"
+                        )
                         null
                     } else {
                         tile
@@ -147,61 +169,5 @@ class MovieRepository @Inject constructor(
         }
 
         return response.copy(rows = validatedRows)
-    }
-
-    private fun createSampleData(): MovieResponse {
-        Log.d(TAG, "Creating sample data as fallback")
-
-        return MovieResponse(
-            rowCount = 2,
-            rows = listOf(
-                // Hero row
-                MovieRow(
-                    rowHeader = "Featured",
-                    rowIndex = 0,
-                    rowLayout = "landscape",
-                    rowItems = listOf(
-                        MovieTile(
-                            tid = "sample_1",
-                            title = "Sample Movie 1",
-                            synopsis = "This is a sample movie for testing",
-                            tileWidth = "1200",
-                            tileHeight = "313",
-                            source = "Sample"
-                        ),
-                        MovieTile(
-                            tid = "sample_2",
-                            title = "Sample Movie 2",
-                            synopsis = "Another sample movie for testing",
-                            tileWidth = "1200",
-                            tileHeight = "313",
-                            source = "Sample"
-                        )
-                    )
-                ),
-                // Content row
-                MovieRow(
-                    rowHeader = "Popular Movies",
-                    rowIndex = 1,
-                    rowLayout = "square",
-                    rowItems = listOf(
-                        MovieTile(
-                            tid = "sample_3",
-                            title = "Sample Square 1",
-                            tileWidth = "220",
-                            tileHeight = "220",
-                            source = "Sample"
-                        ),
-                        MovieTile(
-                            tid = "sample_4",
-                            title = "Sample Square 2",
-                            tileWidth = "220",
-                            tileHeight = "220",
-                            source = "Sample"
-                        )
-                    )
-                )
-            )
-        )
     }
 }

@@ -1,7 +1,9 @@
 package tv.cloudwalker.cloudwalkercompose.model
 
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
+@Keep
 data class MovieResponse(
     @SerializedName("rowCount")
     val rowCount: Int = 0,
@@ -9,6 +11,7 @@ data class MovieResponse(
     val rows: List<MovieRow> = emptyList()
 )
 
+@Keep
 data class MovieRow(
     @SerializedName("rowHeader")
     val rowHeader: String = "",
@@ -24,6 +27,7 @@ data class MovieRow(
     val rowAutoRotate: Boolean? = false
 )
 
+@Keep
 data class MovieTile(
     @SerializedName("tid")
     val tid: String = "",

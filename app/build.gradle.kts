@@ -37,7 +37,9 @@ android {
             initWith(buildTypes.getByName("release"))
             matchingFallbacks += listOf("release")
             isDebuggable = false
+            signingConfig = signingConfigs.getByName("debug")
         }
+
     }
 
     compileOptions {
@@ -64,7 +66,7 @@ android {
     }
 }
 
-// Baseline Profile configuration
+// FIXED: Baseline Profile configuration
 baselineProfile {
     // Don't build on every iteration of a full assemble.
     automaticGenerationDuringBuild = false
@@ -130,6 +132,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Baseline profile generation
-//    "baselineProfile"(project(":benchmark"))
+    //"baselineProfile"(project(":benchmark"))
 }

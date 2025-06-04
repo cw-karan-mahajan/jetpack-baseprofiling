@@ -2,25 +2,32 @@ package tv.cloudwalker.cloudwalkercompose.presentation.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,7 +39,8 @@ import coil.size.Size
 import tv.cloudwalker.cloudwalkercompose.model.MovieRow
 import tv.cloudwalker.cloudwalkercompose.model.MovieTile
 import tv.cloudwalker.cloudwalkercompose.presentation.viewmodel.LauncherViewModel
-import kotlin.math.abs
+import tv.cloudwalker.cloudwalkercompose.presentation.components.RightSideNavigationDrawer
+import tv.cloudwalker.cloudwalkercompose.presentation.components.TVTopNavigationBar
 
 @Composable
 fun LauncherScreen(
@@ -41,30 +49,98 @@ fun LauncherScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Navigation Drawer State
+    var isDrawerOpen by remember { mutableStateOf(false) }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        when {
-            uiState.isLoading && uiState.contentRows.isEmpty() -> {
-                LoadingContent()
-            }
-
-            uiState.error != null && uiState.contentRows.isEmpty() -> {
-                ErrorContent(
-                    error = uiState.error ?: "Unknown error",
-                    onRetry = viewModel::onRefresh
+        // Main Content - DISABLE when drawer is open
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (isDrawerOpen) {
+                        // When drawer is open, make background non-focusable
+                        Modifier
+                            .graphicsLayer { alpha = 0.3f } // Dim the background
+                            .onKeyEvent { true } // Block ALL key events
+                    } else {
+                        Modifier // Normal behavior when drawer is closed
+                    }
                 )
-            }
+        ) {
+            when {
+                uiState.isLoading && uiState.contentRows.isEmpty() -> {
+                    LoadingContent()
+                }
 
-            else -> {
-                SimpleContent(
-                    rows = uiState.contentRows,
-                    onTileClick = viewModel::onTileClick
-                )
+                uiState.error != null && uiState.contentRows.isEmpty() -> {
+                    ErrorContent(
+                        error = uiState.error ?: "Unknown error",
+                        onRetry = viewModel::onRefresh
+                    )
+                }
+
+                else -> {
+                    ScrollableContentWithTopNav(
+                        rows = uiState.contentRows,
+                        onTileClick = viewModel::onTileClick,
+                        isDrawerOpen = isDrawerOpen, // Pass drawer state
+                        onProfileClick = {
+                            isDrawerOpen = true
+                        },
+                        onSearchClick = {
+                            // Handle search click
+                        },
+                        onSettingsClick = {
+                            // Handle settings click
+                        },
+                        onWifiClick = {
+                            // Handle wifi click
+                        },
+                        onExitClick = {
+                            // Handle exit click
+                        },
+                        onAppsClick = {
+                            // Handle apps click
+                        }
+                    )
+                }
             }
         }
+
+        // Right Side Navigation Drawer
+        RightSideNavigationDrawer(
+            isOpen = isDrawerOpen,
+            onClose = { isDrawerOpen = false },
+            drawerWidth = 0.5f,
+            userName = "Sandra Adams",
+            userEmail = "sandra_a88@gmail.com",
+            onMyFilesClick = {
+                isDrawerOpen = false
+            },
+            onSharedClick = {
+                isDrawerOpen = false
+            },
+            onStarredClick = {
+                isDrawerOpen = false
+            },
+            onRecentClick = {
+                isDrawerOpen = false
+            },
+            onOfflineClick = {
+                isDrawerOpen = false
+            },
+            onUploadsClick = {
+                isDrawerOpen = false
+            },
+            onBackupsClick = {
+                isDrawerOpen = false
+            }
+        )
     }
 }
 
@@ -86,6 +162,8 @@ private fun ErrorContent(
     error: String,
     onRetry: () -> Unit
 ) {
+    val focusRequester = remember { FocusRequester() }
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -112,6 +190,7 @@ private fun ErrorContent(
 
         Button(
             onClick = onRetry,
+            modifier = Modifier.focusRequester(focusRequester),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary
             )
@@ -119,52 +198,83 @@ private fun ErrorContent(
             Text(text = "Retry")
         }
     }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 }
 
 @Composable
-private fun SimpleContent(
+private fun ScrollableContentWithTopNav(
     rows: List<MovieRow>,
-    onTileClick: (MovieTile) -> Unit
+    onTileClick: (MovieTile) -> Unit,
+    isDrawerOpen: Boolean, // NEW: Drawer state
+    onProfileClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onWifiClick: () -> Unit,
+    onExitClick: () -> Unit,
+    onAppsClick: () -> Unit
 ) {
     val listState = rememberLazyListState()
-
-    // Simple viewport detection (optional optimization)
-    val visibleRowIndices by remember {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            val firstVisible = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
-            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            firstVisible..lastVisible
-        }
-    }
+    val (mainColumn, topNavSection) = remember { FocusRequester.createRefs() }
 
     LazyColumn(
         state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer { alpha = 1f }, // Simple GPU optimization
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        contentPadding = PaddingValues(vertical = 32.dp)
+            .then(
+                if (!isDrawerOpen) {
+                    // Only allow focus when drawer is closed
+                    Modifier
+                        .focusRequester(mainColumn)
+                        .focusRestorer(topNavSection)
+                } else {
+                    // When drawer is open, disable all focus
+                    Modifier
+                }
+            )
+            .graphicsLayer { alpha = 1f },
+        verticalArrangement = Arrangement.spacedBy(0.dp),
+        contentPadding = PaddingValues(bottom = 32.dp),
+        userScrollEnabled = !isDrawerOpen // Disable scrolling when drawer is open
     ) {
-        items(
-            items = rows,
-            key = { row -> "row_${row.rowIndex}_${row.rowHeader}" },
-            contentType = { row -> if (row.rowIndex == 0) "hero" else "content" }
-        ) { row ->
-            if (row.rowItems.isNotEmpty()) {
-                val isVisible = row.rowIndex in visibleRowIndices
+        item(key = "top_nav") {
+            TVTopNavigationBar(
+                modifier = if (!isDrawerOpen) {
+                    Modifier.focusRequester(topNavSection)
+                } else {
+                    Modifier // No focus when drawer is open
+                },
+                onProfileClick = onProfileClick,
+                onSearchClick = onSearchClick,
+                onSettingsClick = onSettingsClick,
+                onWifiClick = onWifiClick,
+                onExitClick = onExitClick,
+                onAppsClick = onAppsClick
+            )
+        }
 
+        // Content rows
+        itemsIndexed(
+            items = rows,
+            key = { _, row -> "row_${row.rowIndex}_${row.rowHeader}" },
+            contentType = { _, row -> if (row.rowIndex == 0) "hero" else "content" }
+        ) { index, row ->
+            if (row.rowItems.isNotEmpty()) {
                 if (row.rowIndex == 0) {
-                    HeroBannerRow(
+                    HeroBannerRowHeader(
                         row = row,
                         onTileClick = onTileClick,
-                        isVisible = isVisible
+                        isDrawerOpen = isDrawerOpen, // Pass drawer state
+                        modifier = Modifier.padding(top = 24.dp)
                     )
                 } else {
-                    ContentRow(
+                    ContentRowHeader(
                         row = row,
                         onTileClick = onTileClick,
-                        isVisible = isVisible
+                        isDrawerOpen = isDrawerOpen, // Pass drawer state
+                        modifier = Modifier.padding(top = 24.dp)
                     )
                 }
             }
@@ -173,14 +283,26 @@ private fun SimpleContent(
 }
 
 @Composable
-private fun HeroBannerRow(
+private fun HeroBannerRowHeader(
     row: MovieRow,
     onTileClick: (MovieTile) -> Unit,
-    isVisible: Boolean
+    isDrawerOpen: Boolean, // NEW: Drawer state
+    modifier: Modifier = Modifier
 ) {
     Column(
+        modifier = modifier
+            .padding(vertical = 8.dp)
+            .then(
+                if (!isDrawerOpen) {
+                    Modifier.focusGroup() // Only allow focus when drawer is closed
+                } else {
+                    Modifier // No focus when drawer is open
+                }
+            ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        val (lazyRow, firstItem) = remember { FocusRequester.createRefs() }
+
         if (row.rowHeader.isNotBlank()) {
             Text(
                 text = row.rowHeader,
@@ -196,17 +318,30 @@ private fun HeroBannerRow(
         }
 
         LazyRow(
+            modifier = if (!isDrawerOpen) {
+                Modifier
+                    .focusRequester(lazyRow)
+                    .focusRestorer(firstItem)
+            } else {
+                Modifier // No focus when drawer is open
+            },
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 32.dp)
+            contentPadding = PaddingValues(horizontal = 32.dp),
+            userScrollEnabled = !isDrawerOpen // Disable scrolling when drawer is open
         ) {
-            items(
-                items = row.rowItems.mapIndexed { index, tile -> index to tile },
-                key = { (index, tile) -> "hero_${row.rowIndex}_${index}_${tile.tid}" }
-            ) { (index, tile) ->
+            itemsIndexed(
+                items = row.rowItems,
+                key = { index, tile -> "hero_${row.rowIndex}_${index}_${tile.tid}" }
+            ) { index, tile ->
                 HeroBannerTile(
                     tile = tile,
                     onTileClick = onTileClick,
-                    loadHighQuality = isVisible && index < 5 // Only first 5 visible tiles get high quality
+                    isDrawerOpen = isDrawerOpen, // Pass drawer state
+                    modifier = if (index == 0 && !isDrawerOpen) {
+                        Modifier.focusRequester(firstItem)
+                    } else {
+                        Modifier
+                    }
                 )
             }
         }
@@ -214,14 +349,26 @@ private fun HeroBannerRow(
 }
 
 @Composable
-private fun ContentRow(
+private fun ContentRowHeader(
     row: MovieRow,
     onTileClick: (MovieTile) -> Unit,
-    isVisible: Boolean
+    isDrawerOpen: Boolean, // NEW: Drawer state
+    modifier: Modifier = Modifier
 ) {
     Column(
+        modifier = modifier
+            .padding(vertical = 8.dp)
+            .then(
+                if (!isDrawerOpen) {
+                    Modifier.focusGroup() // Only allow focus when drawer is closed
+                } else {
+                    Modifier // No focus when drawer is open
+                }
+            ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        val (lazyRow, firstItem) = remember { FocusRequester.createRefs() }
+
         Text(
             text = row.rowHeader,
             style = MaterialTheme.typography.headlineSmall.copy(
@@ -235,21 +382,73 @@ private fun ContentRow(
         )
 
         LazyRow(
+            modifier = if (!isDrawerOpen) {
+                Modifier
+                    .focusRequester(lazyRow)
+                    .focusRestorer(firstItem)
+            } else {
+                Modifier // No focus when drawer is open
+            },
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 32.dp)
+            contentPadding = PaddingValues(horizontal = 32.dp),
+            userScrollEnabled = !isDrawerOpen // Disable scrolling when drawer is open
         ) {
-            items(
-                items = row.rowItems.mapIndexed { index, tile -> index to tile },
-                key = { (index, tile) -> "content_${row.rowIndex}_${index}_${tile.tid}" }
-            ) { (index, tile) ->
+            itemsIndexed(
+                items = row.rowItems,
+                key = { index, tile -> "content_${row.rowIndex}_${index}_${tile.tid}" }
+            ) { index, tile ->
                 ContentTile(
                     tile = tile,
                     rowLayout = row.rowLayout,
                     onTileClick = onTileClick,
-                    loadHighQuality = isVisible && index < 8 // Only first 8 visible tiles get high quality
+                    isDrawerOpen = isDrawerOpen, // Pass drawer state
+                    modifier = if (index == 0 && !isDrawerOpen) {
+                        Modifier.focusRequester(firstItem)
+                    } else {
+                        Modifier
+                    }
                 )
             }
         }
+    }
+}
+
+// Pre-calculate tile dimensions to avoid recomposition
+@Stable
+data class TileDimensions(
+    val width: Dp,
+    val height: Dp
+)
+
+@Composable
+private fun getTileDimensions(tile: MovieTile, rowLayout: String): TileDimensions {
+    return remember(tile.tid, rowLayout) {
+        when (rowLayout) {
+            "landscape" -> TileDimensions(
+                width = tile.tileWidth?.toIntOrNull()?.dp ?: 400.dp,
+                height = tile.tileHeight?.toIntOrNull()?.dp ?: 225.dp
+            )
+            "square" -> TileDimensions(
+                width = tile.tileWidth?.toIntOrNull()?.dp ?: 220.dp,
+                height = tile.tileHeight?.toIntOrNull()?.dp ?: 220.dp
+            )
+            "portrait" -> TileDimensions(
+                width = tile.tileWidth?.toIntOrNull()?.dp ?: 180.dp,
+                height = tile.tileHeight?.toIntOrNull()?.dp ?: 240.dp
+            )
+            else -> TileDimensions(width = 220.dp, height = 220.dp)
+        }
+    }
+}
+
+@Composable
+private fun getImageUrl(tile: MovieTile, rowLayout: String): String? {
+    return remember(tile.tid, rowLayout) {
+        when (rowLayout) {
+            "landscape" -> tile.poster ?: tile.background
+            "portrait", "square" -> tile.portrait ?: tile.poster
+            else -> tile.displayImage
+        }?.replace("http://", "https://")
     }
 }
 
@@ -257,21 +456,51 @@ private fun ContentRow(
 private fun HeroBannerTile(
     tile: MovieTile,
     onTileClick: (MovieTile) -> Unit,
-    loadHighQuality: Boolean
+    isDrawerOpen: Boolean, // NEW: Drawer state
+    modifier: Modifier = Modifier
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
+    // Reset focus when drawer opens
+    LaunchedEffect(isDrawerOpen) {
+        if (isDrawerOpen) {
+            isFocused = false
+        }
+    }
+
+    // Pre-calculate dimensions
     val tileWidth = remember(tile.tid) { tile.tileWidth?.toIntOrNull()?.dp ?: 1200.dp }
     val tileHeight = remember(tile.tid) { tile.tileHeight?.toIntOrNull()?.dp ?: 313.dp }
+    val imageUrl = remember(tile.tid) {
+        tile.poster?.replace("http://", "https://") ?: tile.background?.replace("http://", "https://")
+    }
+
+    val imageRequest = remember(tile.tid, imageUrl) {
+        ImageRequest.Builder(context)
+            .data(imageUrl)
+            .size(Size.ORIGINAL)
+            .scale(Scale.FILL)
+            .crossfade(200)
+            .memoryCacheKey("hero_${tile.tid}")
+            .build()
+    }
 
     Card(
-        onClick = { onTileClick(tile) },
-        modifier = Modifier
+        onClick = { if (!isDrawerOpen) onTileClick(tile) }, // Only clickable when drawer is closed
+        modifier = modifier
             .size(width = tileWidth, height = tileHeight)
-            .onFocusChanged { isFocused = it.isFocused }
             .then(
-                if (isFocused) {
+                if (!isDrawerOpen) {
+                    Modifier.onFocusChanged { focusState ->
+                        isFocused = focusState.isFocused
+                    }
+                } else {
+                    Modifier // No focus handling when drawer is open
+                }
+            )
+            .then(
+                if (isFocused && !isDrawerOpen) {
                     Modifier.border(4.dp, Color.White, RoundedCornerShape(12.dp))
                 } else {
                     Modifier
@@ -280,84 +509,11 @@ private fun HeroBannerTile(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            val imageUrl = remember(tile.tid) {
-                tile.poster?.replace("http://", "https://")
-                    ?: tile.background?.replace("http://", "https://")
-            }
-
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(imageUrl)
-                    .size(if (loadHighQuality) Size.ORIGINAL else Size(600, 200))
-                    .scale(Scale.FILL)
-                    .crossfade(200)
-                    .memoryCacheKey("hero_${tile.tid}")
-                    .build(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-
-            // Ad indicator
-            if (tile.isAdTile) {
-                Box(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .background(Color.Black.copy(0.7f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "Ad",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            // Overlay when focused
-            if (isFocused) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color.Black.copy(0.7f)),
-                                startY = 150f
-                            )
-                        )
-                )
-
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = tile.title,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    if (!tile.synopsis.isNullOrBlank()) {
-                        Text(
-                            text = tile.synopsis,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(0.9f),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        }
+        HeroBannerTileContent(
+            tile = tile,
+            imageRequest = imageRequest,
+            isFocused = isFocused && !isDrawerOpen // Only show focus when drawer is closed
+        )
     }
 }
 
@@ -366,36 +522,47 @@ private fun ContentTile(
     tile: MovieTile,
     rowLayout: String,
     onTileClick: (MovieTile) -> Unit,
-    loadHighQuality: Boolean
+    isDrawerOpen: Boolean, // NEW: Drawer state
+    modifier: Modifier = Modifier
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    val (tileWidth, tileHeight) = remember(tile.tid, rowLayout) {
-        when (rowLayout) {
-            "landscape" -> {
-                (tile.tileWidth?.toIntOrNull()?.dp ?: 400.dp) to
-                        (tile.tileHeight?.toIntOrNull()?.dp ?: 225.dp)
-            }
-            "square" -> {
-                (tile.tileWidth?.toIntOrNull()?.dp ?: 220.dp) to
-                        (tile.tileHeight?.toIntOrNull()?.dp ?: 220.dp)
-            }
-            "portrait" -> {
-                (tile.tileWidth?.toIntOrNull()?.dp ?: 180.dp) to
-                        (tile.tileHeight?.toIntOrNull()?.dp ?: 240.dp)
-            }
-            else -> 220.dp to 220.dp
+    // Reset focus when drawer opens
+    LaunchedEffect(isDrawerOpen) {
+        if (isDrawerOpen) {
+            isFocused = false
         }
     }
 
+    val dimensions = getTileDimensions(tile, rowLayout)
+    val imageUrl = getImageUrl(tile, rowLayout)
+
+    val imageRequest = remember(tile.tid, rowLayout, imageUrl) {
+        ImageRequest.Builder(context)
+            .data(imageUrl)
+            .size(Size(dimensions.width.value.toInt(), dimensions.height.value.toInt()))
+            .scale(Scale.FILL)
+            .crossfade(150)
+            .memoryCacheKey("tile_${tile.tid}_${rowLayout}")
+            .build()
+    }
+
     Card(
-        onClick = { onTileClick(tile) },
-        modifier = Modifier
-            .size(width = tileWidth, height = tileHeight)
-            .onFocusChanged { isFocused = it.isFocused }
+        onClick = { if (!isDrawerOpen) onTileClick(tile) }, // Only clickable when drawer is closed
+        modifier = modifier
+            .size(width = dimensions.width, height = dimensions.height)
             .then(
-                if (isFocused) {
+                if (!isDrawerOpen) {
+                    Modifier.onFocusChanged { focusState ->
+                        isFocused = focusState.isFocused
+                    }
+                } else {
+                    Modifier // No focus handling when drawer is open
+                }
+            )
+            .then(
+                if (isFocused && !isDrawerOpen) {
                     Modifier.border(3.dp, Color.White, RoundedCornerShape(8.dp))
                 } else {
                     Modifier
@@ -404,78 +571,153 @@ private fun ContentTile(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Box {
-            val imageUrl = remember(tile.tid, rowLayout) {
-                when (rowLayout) {
-                    "landscape" -> tile.poster ?: tile.background
-                    "portrait", "square" -> tile.portrait ?: tile.poster
-                    else -> tile.displayImage
-                }?.replace("http://", "https://")
-            }
+        ContentTileContent(
+            tile = tile,
+            rowLayout = rowLayout,
+            imageRequest = imageRequest,
+            isFocused = isFocused && !isDrawerOpen // Only show focus when drawer is closed
+        )
+    }
+}
 
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(imageUrl)
-                    .size(
-                        if (loadHighQuality) {
-                            Size(tileWidth.value.toInt(), tileHeight.value.toInt())
-                        } else {
-                            Size(tileWidth.value.toInt() / 2, tileHeight.value.toInt() / 2)
-                        }
-                    )
-                    .scale(Scale.FILL)
-                    .crossfade(150)
-                    .memoryCacheKey("tile_${tile.tid}_${rowLayout}")
-                    .build(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+@Composable
+private fun HeroBannerTileContent(
+    tile: MovieTile,
+    imageRequest: ImageRequest,
+    isFocused: Boolean
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        AsyncImage(
+            model = imageRequest,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
 
-            // Ad indicator
-            if (tile.isAdTile) {
-                Box(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .background(Color.Black.copy(0.7f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "Ad",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+        // Ad indicator - only if needed
+        if (tile.isAdTile) {
+            AdIndicator()
+        }
 
-            // Title overlay for landscape tiles when focused
-            if (rowLayout == "landscape" && isFocused) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color.Black.copy(0.8f)),
-                                startY = 100f
-                            )
-                        )
-                )
-
-                Text(
-                    text = tile.title,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 16.sp
-                    ),
-                    color = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(12.dp),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+        // Focus overlay - separate composable to minimize recomposition
+        if (isFocused) {
+            FocusOverlay(tile = tile)
         }
     }
+}
+
+@Composable
+private fun ContentTileContent(
+    tile: MovieTile,
+    rowLayout: String,
+    imageRequest: ImageRequest,
+    isFocused: Boolean
+) {
+    Box {
+        AsyncImage(
+            model = imageRequest,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        // Ad indicator
+        if (tile.isAdTile) {
+            AdIndicator()
+        }
+
+        // Title overlay for landscape tiles when focused
+        if (rowLayout == "landscape" && isFocused) {
+            LandscapeFocusOverlay(tile = tile)
+        }
+    }
+}
+
+@Composable
+private fun AdIndicator() {
+    Box(
+        modifier = Modifier
+            .padding(8.dp)
+            .background(Color.Black.copy(0.7f), RoundedCornerShape(4.dp))
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text = "Ad",
+            color = Color.White,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun FocusOverlay(tile: MovieTile) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color.Transparent, Color.Black.copy(0.7f)),
+                    startY = 150f
+                )
+            )
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .wrapContentHeight(Alignment.Bottom)
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = tile.title,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        if (!tile.synopsis.isNullOrBlank()) {
+            Text(
+                text = tile.synopsis,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(0.9f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun LandscapeFocusOverlay(tile: MovieTile) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color.Transparent, Color.Black.copy(0.8f)),
+                    startY = 100f
+                )
+            )
+    )
+
+    Text(
+        text = tile.title,
+        style = MaterialTheme.typography.bodyMedium.copy(
+            fontWeight = FontWeight.Medium,
+            fontSize = 16.sp
+        ),
+        color = Color.White,
+        modifier = Modifier
+            .fillMaxSize()
+            .wrapContentHeight(Alignment.Bottom)
+            .padding(12.dp),
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+    )
 }

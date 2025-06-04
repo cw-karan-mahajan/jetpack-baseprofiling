@@ -5,9 +5,7 @@
     <!-- Network Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-
-    <!-- TV Features -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- TV Features -->
     <uses-feature
         android:name="android.software.leanback"
         android:required="true" />
@@ -32,6 +30,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CloudWalkerCompose"
         tools:targetApi="31">
+        <profileable
+            android:shell="true"
+            tools:targetApi="29" />
 
         <activity
             android:name=".MainActivity"
@@ -43,21 +44,17 @@
             <!-- Main launcher intent -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
             <!-- TV launcher intent -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Baseline Profile Support (Optional) -->
-        <profileable
-            android:shell="true"
-            tools:targetApi="29" />
-
     </application>
 
 </manifest>

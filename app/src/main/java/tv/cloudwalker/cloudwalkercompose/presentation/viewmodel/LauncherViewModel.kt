@@ -33,7 +33,7 @@ class LauncherViewModel @Inject constructor(
         loadHomeScreenData()
     }
 
-    fun loadHomeScreenData() {
+    private fun loadHomeScreenData() {
         loadingJob?.cancel()
         loadingJob = viewModelScope.launch {
             repository.getHomeScreenData()
