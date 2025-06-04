@@ -41,6 +41,7 @@ import tv.cloudwalker.cloudwalkercompose.model.MovieTile
 import tv.cloudwalker.cloudwalkercompose.presentation.viewmodel.LauncherViewModel
 import tv.cloudwalker.cloudwalkercompose.presentation.components.RightSideNavigationDrawer
 import tv.cloudwalker.cloudwalkercompose.presentation.components.TVTopNavigationBar
+import tv.cloudwalker.cloudwalkercompose.presentation.components.ImmersiveOverlayList
 
 @Composable
 fun LauncherScreen(
@@ -52,23 +53,29 @@ fun LauncherScreen(
     // Navigation Drawer State
     var isDrawerOpen by remember { mutableStateOf(false) }
 
+    // Immersive Overlay State
+    var isImmersiveOverlayOpen by remember { mutableStateOf(false) }
+    var immersiveOverlayTitle by remember { mutableStateOf("") }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // Main Content - DISABLE when drawer is open
+        // Main Content - DISABLE when drawer or overlay is open
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (isDrawerOpen) {
-                        // When drawer is open, make background non-focusable
+                    if (isDrawerOpen || isImmersiveOverlayOpen) {
+                        // When drawer or overlay is open, make background non-focusable
                         Modifier
-                            .graphicsLayer { alpha = 0.3f } // Dim the background
+                            .graphicsLayer {
+                                alpha = if (isImmersiveOverlayOpen) 0.3f else 0.3f
+                            } // Dim the background
                             .onKeyEvent { true } // Block ALL key events
                     } else {
-                        Modifier // Normal behavior when drawer is closed
+                        Modifier // Normal behavior when drawer and overlay are closed
                     }
                 )
         ) {
@@ -88,7 +95,7 @@ fun LauncherScreen(
                     ScrollableContentWithTopNav(
                         rows = uiState.contentRows,
                         onTileClick = viewModel::onTileClick,
-                        isDrawerOpen = isDrawerOpen, // Pass drawer state
+                        isOverlayOpen = isDrawerOpen || isImmersiveOverlayOpen, // Pass overlay state
                         onProfileClick = {
                             isDrawerOpen = true
                         },
@@ -105,7 +112,9 @@ fun LauncherScreen(
                             // Handle exit click
                         },
                         onAppsClick = {
-                            // Handle apps click
+                            // Open immersive overlay
+                            immersiveOverlayTitle = "Apps & Games"
+                            isImmersiveOverlayOpen = true
                         }
                     )
                 }
@@ -121,25 +130,57 @@ fun LauncherScreen(
             userEmail = "sandra_a88@gmail.com",
             onMyFilesClick = {
                 isDrawerOpen = false
+                immersiveOverlayTitle = "My Files"
+                isImmersiveOverlayOpen = true
             },
             onSharedClick = {
                 isDrawerOpen = false
+                immersiveOverlayTitle = "Shared with me"
+                isImmersiveOverlayOpen = true
             },
             onStarredClick = {
                 isDrawerOpen = false
+                immersiveOverlayTitle = "Starred"
+                isImmersiveOverlayOpen = true
             },
             onRecentClick = {
                 isDrawerOpen = false
+                immersiveOverlayTitle = "Recent"
+                isImmersiveOverlayOpen = true
             },
             onOfflineClick = {
                 isDrawerOpen = false
+                immersiveOverlayTitle = "Offline"
+                isImmersiveOverlayOpen = true
             },
             onUploadsClick = {
                 isDrawerOpen = false
+                immersiveOverlayTitle = "Uploads"
+                isImmersiveOverlayOpen = true
             },
             onBackupsClick = {
                 isDrawerOpen = false
+                immersiveOverlayTitle = "Backups"
+                isImmersiveOverlayOpen = true
             }
+        )
+
+        // Immersive Overlay List
+        ImmersiveOverlayList(
+            isVisible = isImmersiveOverlayOpen,
+            onDismiss = {
+                isImmersiveOverlayOpen = false
+                // Focus will automatically return to the last focused item in the home screen
+            },
+            onItemClick = { rowIndex, colIndex ->
+                // Handle item selection
+                println("Selected item at row: $rowIndex, column: $colIndex from $immersiveOverlayTitle")
+                isImmersiveOverlayOpen = false
+                // Focus will automatically return to the last focused item in the home screen
+            },
+            title = immersiveOverlayTitle,
+            rowCount = 5,
+            columnCount = 10
         )
     }
 }
@@ -208,7 +249,7 @@ private fun ErrorContent(
 private fun ScrollableContentWithTopNav(
     rows: List<MovieRow>,
     onTileClick: (MovieTile) -> Unit,
-    isDrawerOpen: Boolean, // NEW: Drawer state
+    isOverlayOpen: Boolean, // Updated to handle both drawer and immersive overlay
     onProfileClick: () -> Unit,
     onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
@@ -224,34 +265,34 @@ private fun ScrollableContentWithTopNav(
         modifier = Modifier
             .fillMaxSize()
             .then(
-                if (!isDrawerOpen) {
-                    // Only allow focus when drawer is closed
+                if (!isOverlayOpen) {
+                    // Only allow focus when no overlays are open
                     Modifier
                         .focusRequester(mainColumn)
                         .focusRestorer(topNavSection)
                 } else {
-                    // When drawer is open, disable all focus
+                    // When any overlay is open, disable all focus
                     Modifier
                 }
             )
             .graphicsLayer { alpha = 1f },
         verticalArrangement = Arrangement.spacedBy(0.dp),
         contentPadding = PaddingValues(bottom = 32.dp),
-        userScrollEnabled = !isDrawerOpen // Disable scrolling when drawer is open
+        userScrollEnabled = !isOverlayOpen // Disable scrolling when any overlay is open
     ) {
         item(key = "top_nav") {
             TVTopNavigationBar(
-                modifier = if (!isDrawerOpen) {
+                modifier = if (!isOverlayOpen) {
                     Modifier.focusRequester(topNavSection)
                 } else {
-                    Modifier // No focus when drawer is open
+                    Modifier // No focus when any overlay is open
                 },
                 onProfileClick = onProfileClick,
                 onSearchClick = onSearchClick,
                 onSettingsClick = onSettingsClick,
                 onWifiClick = onWifiClick,
                 onExitClick = onExitClick,
-                onAppsClick = onAppsClick
+                onAppsClick = onAppsClick // This will open the immersive overlay
             )
         }
 
@@ -266,14 +307,14 @@ private fun ScrollableContentWithTopNav(
                     HeroBannerRowHeader(
                         row = row,
                         onTileClick = onTileClick,
-                        isDrawerOpen = isDrawerOpen, // Pass drawer state
+                        isOverlayOpen = isOverlayOpen,
                         modifier = Modifier.padding(top = 24.dp)
                     )
                 } else {
                     ContentRowHeader(
                         row = row,
                         onTileClick = onTileClick,
-                        isDrawerOpen = isDrawerOpen, // Pass drawer state
+                        isOverlayOpen = isOverlayOpen,
                         modifier = Modifier.padding(top = 24.dp)
                     )
                 }
@@ -286,17 +327,17 @@ private fun ScrollableContentWithTopNav(
 private fun HeroBannerRowHeader(
     row: MovieRow,
     onTileClick: (MovieTile) -> Unit,
-    isDrawerOpen: Boolean, // NEW: Drawer state
+    isOverlayOpen: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .padding(vertical = 8.dp)
             .then(
-                if (!isDrawerOpen) {
-                    Modifier.focusGroup() // Only allow focus when drawer is closed
+                if (!isOverlayOpen) {
+                    Modifier.focusGroup() // Only allow focus when no overlays are open
                 } else {
-                    Modifier // No focus when drawer is open
+                    Modifier // No focus when any overlay is open
                 }
             ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -318,16 +359,16 @@ private fun HeroBannerRowHeader(
         }
 
         LazyRow(
-            modifier = if (!isDrawerOpen) {
+            modifier = if (!isOverlayOpen) {
                 Modifier
                     .focusRequester(lazyRow)
                     .focusRestorer(firstItem)
             } else {
-                Modifier // No focus when drawer is open
+                Modifier // No focus when any overlay is open
             },
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = 32.dp),
-            userScrollEnabled = !isDrawerOpen // Disable scrolling when drawer is open
+            userScrollEnabled = !isOverlayOpen
         ) {
             itemsIndexed(
                 items = row.rowItems,
@@ -336,8 +377,8 @@ private fun HeroBannerRowHeader(
                 HeroBannerTile(
                     tile = tile,
                     onTileClick = onTileClick,
-                    isDrawerOpen = isDrawerOpen, // Pass drawer state
-                    modifier = if (index == 0 && !isDrawerOpen) {
+                    isOverlayOpen = isOverlayOpen,
+                    modifier = if (index == 0 && !isOverlayOpen) {
                         Modifier.focusRequester(firstItem)
                     } else {
                         Modifier
@@ -352,17 +393,17 @@ private fun HeroBannerRowHeader(
 private fun ContentRowHeader(
     row: MovieRow,
     onTileClick: (MovieTile) -> Unit,
-    isDrawerOpen: Boolean, // NEW: Drawer state
+    isOverlayOpen: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .padding(vertical = 8.dp)
             .then(
-                if (!isDrawerOpen) {
-                    Modifier.focusGroup() // Only allow focus when drawer is closed
+                if (!isOverlayOpen) {
+                    Modifier.focusGroup() // Only allow focus when no overlays are open
                 } else {
-                    Modifier // No focus when drawer is open
+                    Modifier // No focus when any overlay is open
                 }
             ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -382,16 +423,16 @@ private fun ContentRowHeader(
         )
 
         LazyRow(
-            modifier = if (!isDrawerOpen) {
+            modifier = if (!isOverlayOpen) {
                 Modifier
                     .focusRequester(lazyRow)
                     .focusRestorer(firstItem)
             } else {
-                Modifier // No focus when drawer is open
+                Modifier // No focus when any overlay is open
             },
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = 32.dp),
-            userScrollEnabled = !isDrawerOpen // Disable scrolling when drawer is open
+            userScrollEnabled = !isOverlayOpen
         ) {
             itemsIndexed(
                 items = row.rowItems,
@@ -401,8 +442,8 @@ private fun ContentRowHeader(
                     tile = tile,
                     rowLayout = row.rowLayout,
                     onTileClick = onTileClick,
-                    isDrawerOpen = isDrawerOpen, // Pass drawer state
-                    modifier = if (index == 0 && !isDrawerOpen) {
+                    isOverlayOpen = isOverlayOpen,
+                    modifier = if (index == 0 && !isOverlayOpen) {
                         Modifier.focusRequester(firstItem)
                     } else {
                         Modifier
@@ -456,15 +497,15 @@ private fun getImageUrl(tile: MovieTile, rowLayout: String): String? {
 private fun HeroBannerTile(
     tile: MovieTile,
     onTileClick: (MovieTile) -> Unit,
-    isDrawerOpen: Boolean, // NEW: Drawer state
+    isOverlayOpen: Boolean,
     modifier: Modifier = Modifier
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    // Reset focus when drawer opens
-    LaunchedEffect(isDrawerOpen) {
-        if (isDrawerOpen) {
+    // Reset focus when overlay opens
+    LaunchedEffect(isOverlayOpen) {
+        if (isOverlayOpen) {
             isFocused = false
         }
     }
@@ -487,20 +528,20 @@ private fun HeroBannerTile(
     }
 
     Card(
-        onClick = { if (!isDrawerOpen) onTileClick(tile) }, // Only clickable when drawer is closed
+        onClick = { if (!isOverlayOpen) onTileClick(tile) },
         modifier = modifier
             .size(width = tileWidth, height = tileHeight)
             .then(
-                if (!isDrawerOpen) {
+                if (!isOverlayOpen) {
                     Modifier.onFocusChanged { focusState ->
                         isFocused = focusState.isFocused
                     }
                 } else {
-                    Modifier // No focus handling when drawer is open
+                    Modifier
                 }
             )
             .then(
-                if (isFocused && !isDrawerOpen) {
+                if (isFocused && !isOverlayOpen) {
                     Modifier.border(4.dp, Color.White, RoundedCornerShape(12.dp))
                 } else {
                     Modifier
@@ -512,7 +553,7 @@ private fun HeroBannerTile(
         HeroBannerTileContent(
             tile = tile,
             imageRequest = imageRequest,
-            isFocused = isFocused && !isDrawerOpen // Only show focus when drawer is closed
+            isFocused = isFocused && !isOverlayOpen
         )
     }
 }
@@ -522,15 +563,15 @@ private fun ContentTile(
     tile: MovieTile,
     rowLayout: String,
     onTileClick: (MovieTile) -> Unit,
-    isDrawerOpen: Boolean, // NEW: Drawer state
+    isOverlayOpen: Boolean,
     modifier: Modifier = Modifier
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    // Reset focus when drawer opens
-    LaunchedEffect(isDrawerOpen) {
-        if (isDrawerOpen) {
+    // Reset focus when overlay opens
+    LaunchedEffect(isOverlayOpen) {
+        if (isOverlayOpen) {
             isFocused = false
         }
     }
@@ -549,20 +590,20 @@ private fun ContentTile(
     }
 
     Card(
-        onClick = { if (!isDrawerOpen) onTileClick(tile) }, // Only clickable when drawer is closed
+        onClick = { if (!isOverlayOpen) onTileClick(tile) },
         modifier = modifier
             .size(width = dimensions.width, height = dimensions.height)
             .then(
-                if (!isDrawerOpen) {
+                if (!isOverlayOpen) {
                     Modifier.onFocusChanged { focusState ->
                         isFocused = focusState.isFocused
                     }
                 } else {
-                    Modifier // No focus handling when drawer is open
+                    Modifier
                 }
             )
             .then(
-                if (isFocused && !isDrawerOpen) {
+                if (isFocused && !isOverlayOpen) {
                     Modifier.border(3.dp, Color.White, RoundedCornerShape(8.dp))
                 } else {
                     Modifier
@@ -575,7 +616,7 @@ private fun ContentTile(
             tile = tile,
             rowLayout = rowLayout,
             imageRequest = imageRequest,
-            isFocused = isFocused && !isDrawerOpen // Only show focus when drawer is closed
+            isFocused = isFocused && !isOverlayOpen
         )
     }
 }
