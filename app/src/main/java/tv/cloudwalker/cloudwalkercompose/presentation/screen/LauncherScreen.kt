@@ -1,9 +1,7 @@
 package tv.cloudwalker.cloudwalkercompose.presentation.screen
 
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -14,11 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -33,26 +29,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Scale
 import coil.size.Size
-import kotlinx.coroutines.delay
 import tv.cloudwalker.cloudwalkercompose.model.MovieRow
 import tv.cloudwalker.cloudwalkercompose.model.MovieTile
 import tv.cloudwalker.cloudwalkercompose.presentation.viewmodel.LauncherViewModel
 import kotlin.math.abs
-
-@Stable
-data class OptimizedMovieRow(
-    val originalRow: MovieRow,
-    val distanceFromViewport: Int,
-    val isVisible: Boolean
-)
-
-@Stable
-data class OptimizedMovieTile(
-    val originalTile: MovieTile,
-    val shouldLoadHighQuality: Boolean,
-    val isInViewport: Boolean,
-    val itemIndex: Int
-)
 
 @Composable
 fun LauncherScreen(
@@ -79,7 +59,7 @@ fun LauncherScreen(
             }
 
             else -> {
-                UltraSmoothContent(
+                SimpleContent(
                     rows = uiState.contentRows,
                     onTileClick = viewModel::onTileClick
                 )
@@ -142,36 +122,19 @@ private fun ErrorContent(
 }
 
 @Composable
-private fun UltraSmoothContent(
+private fun SimpleContent(
     rows: List<MovieRow>,
     onTileClick: (MovieTile) -> Unit
 ) {
     val listState = rememberLazyListState()
 
-    // ADVANCED OPTIMIZATION: Calculate viewport and virtualization
-    val visibleItemsInfo by remember {
+    // Simple viewport detection (optional optimization)
+    val visibleRowIndices by remember {
         derivedStateOf {
-            listState.layoutInfo.visibleItemsInfo
-        }
-    }
-
-    val firstVisibleIndex by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex
-        }
-    }
-
-    // VIRTUALIZATION: Only process rows near viewport
-    val optimizedRows by remember(rows, firstVisibleIndex) {
-        derivedStateOf {
-            rows.mapIndexed { index, row ->
-                val distanceFromViewport = abs(index - firstVisibleIndex)
-                OptimizedMovieRow(
-                    originalRow = row,
-                    distanceFromViewport = distanceFromViewport,
-                    isVisible = distanceFromViewport <= 2 // Visible + 2 buffer rows
-                )
-            }.filter { it.distanceFromViewport <= 5 } // Only render nearby rows
+            val layoutInfo = listState.layoutInfo
+            val firstVisible = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            firstVisible..lastVisible
         }
     }
 
@@ -179,32 +142,29 @@ private fun UltraSmoothContent(
         state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer {
-                // GPU OPTIMIZATION: Hardware acceleration
-                compositingStrategy = CompositingStrategy.Offscreen
-            },
+            .graphicsLayer { alpha = 1f }, // Simple GPU optimization
         verticalArrangement = Arrangement.spacedBy(24.dp),
-        contentPadding = PaddingValues(vertical = 32.dp),
-        // PERFORMANCE: Optimize fling behavior
-        flingBehavior = ScrollableDefaults.flingBehavior()
+        contentPadding = PaddingValues(vertical = 32.dp)
     ) {
         items(
-            items = optimizedRows,
-            key = { optRow -> "row_${optRow.originalRow.rowIndex}_${optRow.originalRow.rowHeader}" },
-            contentType = { optRow -> if (optRow.originalRow.rowIndex == 0) "hero" else "content" }
-        ) { optimizedRow ->
-            if (optimizedRow.originalRow.rowItems.isNotEmpty()) {
-                if (optimizedRow.originalRow.rowIndex == 0) {
-                    // Hero Banner Row with original sizes
-                    UltraSmoothHeroBannerSection(
-                        optimizedRow = optimizedRow,
-                        onTileClick = onTileClick
+            items = rows,
+            key = { row -> "row_${row.rowIndex}_${row.rowHeader}" },
+            contentType = { row -> if (row.rowIndex == 0) "hero" else "content" }
+        ) { row ->
+            if (row.rowItems.isNotEmpty()) {
+                val isVisible = row.rowIndex in visibleRowIndices
+
+                if (row.rowIndex == 0) {
+                    HeroBannerRow(
+                        row = row,
+                        onTileClick = onTileClick,
+                        isVisible = isVisible
                     )
                 } else {
-                    // Regular Content Row with original sizes
-                    UltraSmoothContentSection(
-                        optimizedRow = optimizedRow,
-                        onTileClick = onTileClick
+                    ContentRow(
+                        row = row,
+                        onTileClick = onTileClick,
+                        isVisible = isVisible
                     )
                 }
             }
@@ -213,24 +173,20 @@ private fun UltraSmoothContent(
 }
 
 @Composable
-private fun UltraSmoothHeroBannerSection(
-    optimizedRow: OptimizedMovieRow,
-    onTileClick: (MovieTile) -> Unit
+private fun HeroBannerRow(
+    row: MovieRow,
+    onTileClick: (MovieTile) -> Unit,
+    isVisible: Boolean
 ) {
-    val row = optimizedRow.originalRow
-
-    // MEMOIZATION: Prevent unnecessary recomposition
-    val memoizedRow = remember(row.rowItems.size, row.rowIndex) { row }
-    val listState = rememberLazyListState()
-
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (memoizedRow.rowHeader.isNotBlank()) {
+        if (row.rowHeader.isNotBlank()) {
             Text(
-                text = memoizedRow.rowHeader,
+                text = row.rowHeader,
                 style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 28.sp
                 ),
                 color = Color.White,
                 modifier = Modifier.padding(horizontal = 32.dp),
@@ -240,28 +196,17 @@ private fun UltraSmoothHeroBannerSection(
         }
 
         LazyRow(
-            state = listState,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 32.dp),
-            modifier = Modifier.graphicsLayer {
-                // GPU OPTIMIZATION for horizontal scrolling
-                compositingStrategy = CompositingStrategy.Offscreen
-            }
+            contentPadding = PaddingValues(horizontal = 32.dp)
         ) {
             items(
-                items = memoizedRow.rowItems.mapIndexed { index, tile ->
-                    OptimizedMovieTile(
-                        originalTile = tile,
-                        shouldLoadHighQuality = optimizedRow.isVisible && index < 10, // Limit high quality to first 10
-                        isInViewport = optimizedRow.distanceFromViewport == 0,
-                        itemIndex = index
-                    )
-                },
-                key = { optTile -> "hero_${memoizedRow.rowIndex}_${optTile.itemIndex}_${optTile.originalTile.tid}" }
-            ) { optimizedTile ->
-                UltraSmoothHeroBannerTile(
-                    optimizedTile = optimizedTile,
-                    onTileClick = onTileClick
+                items = row.rowItems.mapIndexed { index, tile -> index to tile },
+                key = { (index, tile) -> "hero_${row.rowIndex}_${index}_${tile.tid}" }
+            ) { (index, tile) ->
+                HeroBannerTile(
+                    tile = tile,
+                    onTileClick = onTileClick,
+                    loadHighQuality = isVisible && index < 5 // Only first 5 visible tiles get high quality
                 )
             }
         }
@@ -269,22 +214,19 @@ private fun UltraSmoothHeroBannerSection(
 }
 
 @Composable
-private fun UltraSmoothContentSection(
-    optimizedRow: OptimizedMovieRow,
-    onTileClick: (MovieTile) -> Unit
+private fun ContentRow(
+    row: MovieRow,
+    onTileClick: (MovieTile) -> Unit,
+    isVisible: Boolean
 ) {
-    val row = optimizedRow.originalRow
-
-    // MEMOIZATION: Stable reference
-    val memoizedRow = remember(row.rowIndex, row.rowItems.size) { row }
-
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = memoizedRow.rowHeader,
+            text = row.rowHeader,
             style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp
             ),
             color = Color.White,
             modifier = Modifier.padding(horizontal = 32.dp),
@@ -294,27 +236,17 @@ private fun UltraSmoothContentSection(
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 32.dp),
-            modifier = Modifier.graphicsLayer {
-                // GPU OPTIMIZATION
-                compositingStrategy = CompositingStrategy.Offscreen
-            }
+            contentPadding = PaddingValues(horizontal = 32.dp)
         ) {
             items(
-                items = memoizedRow.rowItems.mapIndexed { index, tile ->
-                    OptimizedMovieTile(
-                        originalTile = tile,
-                        shouldLoadHighQuality = optimizedRow.isVisible && index < 15, // Limit high quality
-                        isInViewport = optimizedRow.distanceFromViewport == 0,
-                        itemIndex = index
-                    )
-                },
-                key = { optTile -> "content_${memoizedRow.rowIndex}_${optTile.itemIndex}_${optTile.originalTile.tid}" }
-            ) { optimizedTile ->
-                UltraSmoothMovieTileCard(
-                    optimizedTile = optimizedTile,
-                    rowLayout = memoizedRow.rowLayout,
-                    onTileClick = onTileClick
+                items = row.rowItems.mapIndexed { index, tile -> index to tile },
+                key = { (index, tile) -> "content_${row.rowIndex}_${index}_${tile.tid}" }
+            ) { (index, tile) ->
+                ContentTile(
+                    tile = tile,
+                    rowLayout = row.rowLayout,
+                    onTileClick = onTileClick,
+                    loadHighQuality = isVisible && index < 8 // Only first 8 visible tiles get high quality
                 )
             }
         }
@@ -322,17 +254,16 @@ private fun UltraSmoothContentSection(
 }
 
 @Composable
-private fun UltraSmoothHeroBannerTile(
-    optimizedTile: OptimizedMovieTile,
-    onTileClick: (MovieTile) -> Unit
+private fun HeroBannerTile(
+    tile: MovieTile,
+    onTileClick: (MovieTile) -> Unit,
+    loadHighQuality: Boolean
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val tile = optimizedTile.originalTile
 
-    // ORIGINAL SIZES MAINTAINED
-    val tileWidth = tile.tileWidth?.toIntOrNull()?.dp ?: 1200.dp
-    val tileHeight = tile.tileHeight?.toIntOrNull()?.dp ?: 313.dp
+    val tileWidth = remember(tile.tid) { tile.tileWidth?.toIntOrNull()?.dp ?: 1200.dp }
+    val tileHeight = remember(tile.tid) { tile.tileHeight?.toIntOrNull()?.dp ?: 313.dp }
 
     Card(
         onClick = { onTileClick(tile) },
@@ -341,74 +272,40 @@ private fun UltraSmoothHeroBannerTile(
             .onFocusChanged { isFocused = it.isFocused }
             .then(
                 if (isFocused) {
-                    Modifier.border(
-                        width = 4.dp,
-                        color = Color.White,
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                    Modifier.border(4.dp, Color.White, RoundedCornerShape(12.dp))
                 } else {
                     Modifier
                 }
-            )
-            .graphicsLayer {
-                // GPU OPTIMIZATION: Reduce overdraw
-                compositingStrategy = if (isFocused) {
-                    CompositingStrategy.Offscreen
-                } else {
-                    CompositingStrategy.Auto
-                }
-            },
+            ),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // SMART IMAGE LOADING: Quality based on viewport distance
-            val imageUrl = tile.poster?.replace("http://", "https://")
-                ?: tile.background?.replace("http://", "https://")
-
-            // PROGRESSIVE IMAGE LOADING
-            var imageLoaded by remember { mutableStateOf(false) }
-
-            LaunchedEffect(optimizedTile.shouldLoadHighQuality) {
-                if (optimizedTile.shouldLoadHighQuality) {
-                    delay(50) // Small delay to prevent loading storm
-                    imageLoaded = true
-                }
+            val imageUrl = remember(tile.tid) {
+                tile.poster?.replace("http://", "https://")
+                    ?: tile.background?.replace("http://", "https://")
             }
 
-            if (imageLoaded || optimizedTile.isInViewport) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(imageUrl)
-                        .size(
-                            if (optimizedTile.shouldLoadHighQuality) {
-                                Size.ORIGINAL // Full quality when visible
-                            } else {
-                                Size(600, 200) // Lower quality when distant
-                            }
-                        )
-                        .scale(Scale.FILL)
-                        .crossfade(if (optimizedTile.isInViewport) 300 else 150)
-                        .memoryCacheKey("hero_${tile.tid}_${optimizedTile.shouldLoadHighQuality}")
-                        .build(),
-                    contentDescription = null, // Remove for performance
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .size(if (loadHighQuality) Size.ORIGINAL else Size(600, 200))
+                    .scale(Scale.FILL)
+                    .crossfade(200)
+                    .memoryCacheKey("hero_${tile.tid}")
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
 
-            // Ad label
+            // Ad indicator
             if (tile.isAdTile) {
                 Box(
                     modifier = Modifier
-                        .padding(16.dp)
-                        .background(
-                            Color.Black.copy(alpha = 0.7f),
-                            RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(8.dp)
+                        .background(Color.Black.copy(0.7f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
                         text = "Ad",
@@ -419,23 +316,19 @@ private fun UltraSmoothHeroBannerTile(
                 }
             }
 
-            // CONDITIONAL OVERLAYS: Only when focused to reduce GPU load
+            // Overlay when focused
             if (isFocused) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.7f)
-                                ),
+                                listOf(Color.Transparent, Color.Black.copy(0.7f)),
                                 startY = 150f
                             )
                         )
                 )
 
-                // Content overlay - only when focused
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -457,7 +350,7 @@ private fun UltraSmoothHeroBannerTile(
                         Text(
                             text = tile.synopsis,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.9f),
+                            color = Color.White.copy(0.9f),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -469,33 +362,31 @@ private fun UltraSmoothHeroBannerTile(
 }
 
 @Composable
-private fun UltraSmoothMovieTileCard(
-    optimizedTile: OptimizedMovieTile,
+private fun ContentTile(
+    tile: MovieTile,
     rowLayout: String,
-    onTileClick: (MovieTile) -> Unit
+    onTileClick: (MovieTile) -> Unit,
+    loadHighQuality: Boolean
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val tile = optimizedTile.originalTile
 
-    // ORIGINAL SIZES MAINTAINED
-    val (tileWidth, tileHeight) = when (rowLayout) {
-        "landscape" -> {
-            val width = tile.tileWidth?.toIntOrNull()?.dp ?: 400.dp
-            val height = tile.tileHeight?.toIntOrNull()?.dp ?: 225.dp
-            width to height
+    val (tileWidth, tileHeight) = remember(tile.tid, rowLayout) {
+        when (rowLayout) {
+            "landscape" -> {
+                (tile.tileWidth?.toIntOrNull()?.dp ?: 400.dp) to
+                        (tile.tileHeight?.toIntOrNull()?.dp ?: 225.dp)
+            }
+            "square" -> {
+                (tile.tileWidth?.toIntOrNull()?.dp ?: 220.dp) to
+                        (tile.tileHeight?.toIntOrNull()?.dp ?: 220.dp)
+            }
+            "portrait" -> {
+                (tile.tileWidth?.toIntOrNull()?.dp ?: 180.dp) to
+                        (tile.tileHeight?.toIntOrNull()?.dp ?: 240.dp)
+            }
+            else -> 220.dp to 220.dp
         }
-        "square" -> {
-            val width = tile.tileWidth?.toIntOrNull()?.dp ?: 220.dp
-            val height = tile.tileHeight?.toIntOrNull()?.dp ?: 220.dp
-            width to height
-        }
-        "portrait" -> {
-            val width = tile.tileWidth?.toIntOrNull()?.dp ?: 180.dp
-            val height = tile.tileHeight?.toIntOrNull()?.dp ?: 240.dp
-            width to height
-        }
-        else -> 220.dp to 220.dp
     }
 
     Card(
@@ -505,78 +396,67 @@ private fun UltraSmoothMovieTileCard(
             .onFocusChanged { isFocused = it.isFocused }
             .then(
                 if (isFocused) {
-                    Modifier.border(
-                        width = 3.dp,
-                        color = Color.White,
-                        shape = RoundedCornerShape(8.dp)
-                    )
+                    Modifier.border(3.dp, Color.White, RoundedCornerShape(8.dp))
                 } else {
                     Modifier
                 }
-            )
-            .graphicsLayer {
-                // GPU OPTIMIZATION
-                compositingStrategy = if (isFocused) {
-                    CompositingStrategy.Offscreen
-                } else {
-                    CompositingStrategy.Auto
-                }
-            },
+            ),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Box {
-            // Choose the right image based on layout
-            val imageUrl = when (rowLayout) {
-                "landscape" -> tile.poster ?: tile.background
-                "portrait", "square" -> tile.portrait ?: tile.poster
-                else -> tile.displayImage
-            }?.replace("http://", "https://")
+            val imageUrl = remember(tile.tid, rowLayout) {
+                when (rowLayout) {
+                    "landscape" -> tile.poster ?: tile.background
+                    "portrait", "square" -> tile.portrait ?: tile.poster
+                    else -> tile.displayImage
+                }?.replace("http://", "https://")
+            }
 
-            // PROGRESSIVE IMAGE LOADING
-            var imageLoaded by remember { mutableStateOf(false) }
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .size(
+                        if (loadHighQuality) {
+                            Size(tileWidth.value.toInt(), tileHeight.value.toInt())
+                        } else {
+                            Size(tileWidth.value.toInt() / 2, tileHeight.value.toInt() / 2)
+                        }
+                    )
+                    .scale(Scale.FILL)
+                    .crossfade(150)
+                    .memoryCacheKey("tile_${tile.tid}_${rowLayout}")
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
 
-            LaunchedEffect(optimizedTile.shouldLoadHighQuality) {
-                if (optimizedTile.shouldLoadHighQuality) {
-                    delay(30) // Stagger loading
-                    imageLoaded = true
+            // Ad indicator
+            if (tile.isAdTile) {
+                Box(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .background(Color.Black.copy(0.7f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "Ad",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
-            if (imageLoaded || optimizedTile.isInViewport) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(imageUrl)
-                        .size(
-                            if (optimizedTile.shouldLoadHighQuality) {
-                                Size(tileWidth.value.toInt(), tileHeight.value.toInt())
-                            } else {
-                                Size(tileWidth.value.toInt() / 2, tileHeight.value.toInt() / 2)
-                            }
-                        )
-                        .scale(Scale.FILL)
-                        .crossfade(if (optimizedTile.isInViewport) 300 else 150)
-                        .memoryCacheKey("tile_${tile.tid}_${rowLayout}_${optimizedTile.shouldLoadHighQuality}")
-                        .build(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            // CONDITIONAL OVERLAYS: Only when focused and in viewport
-            if (rowLayout == "landscape" && isFocused && optimizedTile.isInViewport) {
+            // Title overlay for landscape tiles when focused
+            if (rowLayout == "landscape" && isFocused) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.8f)
-                                ),
+                                listOf(Color.Transparent, Color.Black.copy(0.8f)),
                                 startY = 100f
                             )
                         )
@@ -595,26 +475,6 @@ private fun UltraSmoothMovieTileCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-            }
-
-            // Ad label
-            if (tile.isAdTile) {
-                Box(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .background(
-                            Color.Black.copy(alpha = 0.7f),
-                            RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "Ad",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
             }
         }
     }

@@ -21,5 +21,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "CloudWalkerCompose"
 include(":app")
-include(":benchmark")
- 
