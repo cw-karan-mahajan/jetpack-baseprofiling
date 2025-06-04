@@ -1,0 +1,22 @@
+[
+  {
+    "package": "com.android.browser",
+    "name": "app_browser"
+  },
+  {
+    "package": "com.cvte.tv.media",
+    "name": "app_multimedia"
+  },
+  {
+    "package": "com.ecloud.eshare.server",
+    "name": "app_eshareserver"
+  },
+  {
+    "package": "tv.cloudwalker.cloudwalkeruniverse",
+    "name": "app_moviebox"
+  },
+  {
+    "package": "com.stark.store",
+    "name": "app_appstore"
+  }
+]

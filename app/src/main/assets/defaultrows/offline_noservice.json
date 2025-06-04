@@ -1,0 +1,348 @@
+{
+  "rowCount": 3,
+  "rows": [
+    {
+      "rowHeader": "",
+      "rowIndex": 0,
+      "rowLayout": "landscape",
+      "rowItems": [
+        {
+          "tid": "offline",
+          "title": "Cloud TV OS",
+          "poster": "file:///android_asset/defaultrows/Images/offline_banner.webp",
+          "background": "https://asset.s4.cloudwalker.tv/images/globalbg/default_bg.webp",
+          "rating": 0,
+          "runtime": "",
+          "startTime": 0,
+          "startIndex": 0,
+          "target": [
+            "null"
+          ],
+          "type": "START",
+          "useAlternate": false,
+          "alternateUrl": "",
+          "playstoreUrl": "",
+          "package": "",
+          "detailPage": false,
+          "source": "",
+          "genre": [
+            ""
+          ],
+          "year": "",
+          "director": [
+            ""
+          ],
+          "cast": [
+            ""
+          ],
+          "synopsis": "Cloud TV OS | Kindly check you network",
+          "tileType": "type1",
+          "showTileInfo": "false",
+          "tileWidth": "1200",
+          "tileHeight": "313"
+        }
+      ]
+    },
+    {
+      "rowIndex": 1,
+      "rowHeader": "Latest News",
+      "rowLayout": "landscape",
+      "rowItems": [
+        {
+          "tileType": "type1",
+          "tid": "offline",
+          "title": "Aaj Tak",
+          "poster": "file:///android_asset/defaultrows/Images/Offline_AajTak.webp",
+          "portrait": "file:///android_asset/defaultrows/Images/offline_aaajtak.webp",
+          "background": "https://asset.s4.cloudwalker.tv/images/globalbg/default_bg.webp",
+          "rating": 0,
+          "runtime": "",
+          "startTime": 0,
+          "startIndex": "channel",
+          "target": [
+            "UCt4t-jeY85JegMlZ-E5UWtA"
+          ],
+          "type": "OPEN_CHANNEL",
+          "useAlternate": false,
+          "alternateUrl": "yt.apk",
+          "playstoreUrl": "https://play.google.com/store/apps/details?id=com.google.android.youtube",
+          "package": "com.google.android.youtube.tv",
+          "detailPage": false,
+          "source": "Youtube",
+          "genre": [
+            "News"
+          ],
+          "year": "",
+          "director": [
+            ""
+          ],
+          "cast": [
+            ""
+          ],
+          "synopsis": "Aaj Tak news channel covers latest news in politics, entertainment, Bollywood, business and sports. ",
+          "showTileInfo": "false",
+          "tileWidth": "302",
+          "tileHeight": "170"
+        },
+        {
+          "tileType": "type1",
+          "tid": "offline",
+          "title": "Republic Bharat",
+          "poster": "file:///android_asset/defaultrows/Images/Offline_RepublicBharat.webp",
+          "portrait": "file:///android_asset/defaultrows/Images/offline_rbharat.webp",
+          "background": "https://asset.s4.cloudwalker.tv/images/globalbg/default_bg.webp",
+          "rating": 0,
+          "runtime": "",
+          "startTime": 0,
+          "startIndex": "channel",
+          "target": [
+            "UCwqusr8YDwM-3mEYTDeJHzw"
+          ],
+          "type": "OPEN_CHANNEL",
+          "useAlternate": false,
+          "alternateUrl": "yt.apk",
+          "playstoreUrl": "https://play.google.com/store/apps/details?id=com.google.android.youtube",
+          "package": "com.google.android.youtube.tv",
+          "detailPage": false,
+          "source": "Youtube",
+          "genre": [
+            "Music"
+          ],
+          "year": "",
+          "director": [
+            ""
+          ],
+          "cast": [
+            ""
+          ],
+          "synopsis": "Saregama brings to you a most comprehensive collection of Evergreen Hindi songs, Ghazals, Hindustani, Carnatic & Devotional music.",
+          "showTileInfo": "false",
+          "tileWidth": "302",
+          "tileHeight": "170"
+        },
+        {
+          "tileType": "type1",
+          "tid": "offline",
+          "title": "India TV ",
+          "poster": "file:///android_asset/defaultrows/Images/Offline_IndiaTV.webp",
+          "portrait": "file:///android_asset/defaultrows/Images/offline_indiatv.webp",
+          "background": "https://asset.s4.cloudwalker.tv/images/globalbg/default_bg.webp",
+          "rating": 0,
+          "runtime": "",
+          "startTime": 0,
+          "startIndex": "channel",
+          "target": [
+            "UCttspZesZIDEwwpVIgoZtWQ"
+          ],
+          "type": "OPEN_CHANNEL",
+          "useAlternate": false,
+          "alternateUrl": "yt.apk",
+          "playstoreUrl": "https://play.google.com/store/apps/details?id=com.google.android.youtube",
+          "package": "com.google.android.youtube.tv",
+          "detailPage": false,
+          "source": "Youtube",
+          "genre": [
+            "Devotional"
+          ],
+          "year": "",
+          "director": [
+            ""
+          ],
+          "cast": [
+            "Sadhguru"
+          ],
+          "synopsis": "Considered among India’s 50 most influential people, Sadhguru is a yogi, mystic, bestselling author, and poet. His clarity of perception places him in a unique space, not only in matters related to spirituality but also in business, environmental and international affairs which opens a new door on all that he touches. Isha Foundation- An international non-profit, public service organization by Sadhguru, holds special consultative status with the Economic and Social Council (ECOSOC) of the United Nations.",
+          "showTileInfo": "false",
+          "tileWidth": "302",
+          "tileHeight": "170"
+        },
+        {
+          "tileType": "type1",
+          "tid": "offline",
+          "title": "TV9 Bharatvarsh",
+          "poster": "file:///android_asset/defaultrows/Images/Offline_TV9Bharatvarsh.webp",
+          "portrait": "file:///android_asset/defaultrows/Images/offline_tvbharatvarsh.webp",
+          "background": "https://asset.s4.cloudwalker.tv/images/globalbg/default_bg.webp",
+          "rating": 0,
+          "runtime": "",
+          "startTime": 0,
+          "startIndex": "channel",
+          "target": [
+            "UCOutOIcn_oho8pyVN3Ng-Pg"
+          ],
+          "type": "OPEN_CHANNEL",
+          "useAlternate": false,
+          "alternateUrl": "yt.apk",
+          "playstoreUrl": "https://play.google.com/store/apps/details?id=com.google.android.youtube",
+          "package": "com.google.android.youtube.tv",
+          "detailPage": false,
+          "genre": [
+            "Drama"
+          ],
+          "year": "2022",
+          "director": [
+            ""
+          ],
+          "cast": [
+            ""
+          ],
+          "synopsis": "Pitaara TV is world’s first Punjabi movies satellite channel dedicatedly promoting Punjabi Cinema & the Entertainment Industry.",
+          "source": "Youtube",
+          "showTileInfo": "false",
+          "tileWidth": "302",
+          "tileHeight": "170"
+        }
+      ]
+    },
+    {
+      "rowIndex": 2,
+      "rowHeader": "Popular Picks",
+      "rowLayout": "landscape",
+      "rowItems": [
+        {
+          "tileType": "type1",
+          "tid": "offline",
+          "title": "Shemaroo Bollywood",
+          "poster": "file:///android_asset/defaultrows/Images/Offline_Shemaroo.webp",
+          "background": "https://asset.s4.cloudwalker.tv/images/globalbg/default_bg.webp",
+          "rating": 0,
+          "runtime": "",
+          "startTime": 0,
+          "startIndex": "channel",
+          "target": [
+            "UCF1JIbMUs6uqoZEY1Haw0GQ"
+          ],
+          "type": "OPEN_CHANNEL",
+          "useAlternate": false,
+          "alternateUrl": "yt.apk",
+          "playstoreUrl": "https://play.google.com/store/apps/details?id=com.google.android.youtube",
+          "package": "com.google.android.youtube.tv",
+          "detailPage": false,
+          "source": "Youtube",
+          "genre": [
+            "Entertainment"
+          ],
+          "year": "",
+          "director": [
+            ""
+          ],
+          "cast": [
+            ""
+          ],
+          "synopsis": "Watch Shemaroo Bollywood for the best and most entertaining movies",
+          "portrait": "file:///android_asset/defaultrows/Images/offline_shemaroo.webp",
+          "showTileInfo": "false",
+          "tileWidth": "302",
+          "tileHeight": "170"
+        },
+        {
+          "tileType": "type1",
+          "tid": "offline",
+          "title": "Saregama Music",
+          "poster": "file:///android_asset/defaultrows/Images/Offline_SaregamaMusic.webp",
+          "background": "https://asset.s4.cloudwalker.tv/images/globalbg/default_bg.webp",
+          "rating": 0,
+          "runtime": "",
+          "startTime": 0,
+          "startIndex": "channel",
+          "target": [
+            "UC_A7K2dXFsTMAciGmnNxy-Q"
+          ],
+          "type": "OPEN_CHANNEL",
+          "useAlternate": false,
+          "alternateUrl": "yt.apk",
+          "playstoreUrl": "https://play.google.com/store/apps/details?id=com.google.android.youtube",
+          "package": "com.google.android.youtube.tv",
+          "detailPage": false,
+          "source": "Youtube",
+          "genre": [
+            "Music"
+          ],
+          "year": "",
+          "director": [
+            ""
+          ],
+          "cast": [
+            "Arnab Goswami"
+          ],
+          "synopsis": "Watch the latest Hindi news LIVE on Republic Bharat. R. Bharat covers the biggest news stories that matter from ground zero. Tune in for latest news, biggest exclusive interviews, and Arnab Goswami's debate show 'Poochta Hai Bharat' only on Republic Bharat",
+          "showTileInfo": "false",
+          "tileWidth": "302",
+          "tileHeight": "170"
+        },
+        {
+          "tileType": "type1",
+          "tid": "offline",
+          "title": "Sadhguru",
+          "poster": "file:///android_asset/defaultrows/Images/Offline_Sadhguru.webp",
+          "portrait": "file:///android_asset/defaultrows/Images/offline_sadhguru.webp",
+          "background": "https://asset.s4.cloudwalker.tv/images/globalbg/default_bg.webp",
+          "rating": 0,
+          "runtime": "",
+          "startTime": 0,
+          "startIndex": "channel",
+          "target": [
+            "UCcYzLCs3zrQIBVHYA1sK2sw"
+          ],
+          "type": "OPEN_CHANNEL",
+          "useAlternate": false,
+          "alternateUrl": "yt.apk",
+          "playstoreUrl": "https://play.google.com/store/apps/details?id=com.google.android.youtube",
+          "package": "com.google.android.youtube.tv",
+          "detailPage": false,
+          "source": "Youtube",
+          "genre": [
+            "Devotional"
+          ],
+          "year": "",
+          "director": [
+            ""
+          ],
+          "cast": [
+            ""
+          ],
+          "synopsis": "IndiaTV News Provides Latest Hindi News and Exclusive Breaking News Headlines from India and around the World. ",
+          "showTileInfo": "false",
+          "tileWidth": "302",
+          "tileHeight": "170"
+        },
+        {
+          "tileType": "type1",
+          "tid": "offline",
+          "title": " Pitaara TV",
+          "poster": "file:///android_asset/defaultrows/Images/Offline_Pitaara.webp",
+          "portrait": "file:///android_asset/defaultrows/Images/offline_pitaratv.webp",
+          "background": "https://asset.s4.cloudwalker.tv/images/globalbg/default_bg.webp",
+          "rating": 0,
+          "runtime": "",
+          "startTime": 0,
+          "startIndex": "channel",
+          "target": [
+            "UCi4Vq-teuggkmswEWCcVrYA"
+          ],
+          "type": "OPEN_CHANNEL",
+          "useAlternate": false,
+          "alternateUrl": "yt.apk",
+          "playstoreUrl": "https://play.google.com/store/apps/details?id=com.google.android.youtube",
+          "package": "com.google.android.youtube.tv",
+          "detailPage": false,
+          "source": "Youtube",
+          "genre": [
+            "Drama"
+          ],
+          "year": "2022",
+          "director": [
+            ""
+          ],
+          "cast": [
+            ""
+          ],
+          "synopsis": "TV9 Bharatvarsh is a Hindi National News Channel, part of 14 year old news power house TV9 group.",
+          "showTileInfo": "false",
+          "tileWidth": "302",
+          "tileHeight": "170"
+        }
+      ]
+    }
+  ]
+}

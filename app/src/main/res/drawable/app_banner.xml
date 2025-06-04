@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <!-- Background -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M0,0h320v180h-320z"/>
+
+    <!-- App Banner Background -->
+    <path
+        android:fillColor="#FF2196F3"
+        android:pathData="M20,40h280v100h-280z"/>
+
+    <!-- App Name Text Background -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M60,80h200v20h-200z"/>
+
+    <!-- Simple TV Icon -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M140,50h40v15h-40z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M135,65h50v2h-50z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M155,67h10v8h-10z"/>
+</vector>

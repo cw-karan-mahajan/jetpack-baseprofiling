@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.CloudWalkerCompose" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>
